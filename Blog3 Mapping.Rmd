@@ -1,0 +1,132 @@
+```{r}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(janitor)
+library(spatstat)
+library(spdep)
+library(RColorBrewer)
+library(tmaptools)
+library(here)
+```
+
+
+
+```{r}
+data <- read.csv(here("COVID19 data in Italy each wave.csv")) %>% 
+  clean_names()
+
+shape <- st_read(here("gadm41_ITA_1/gadm41_ITA_1.shp")) %>% 
+  clean_names()
+
+joined_data <- left_join(shape, data, by = c("name_1"="denominazione_regione"))
+
+qtm(joined_data)
+
+
+
+
+```
+```{r}
+library(gridExtra) 
+
+
+first_wave <- tm_shape(joined_data) + tm_fill("death_in_first_wave", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the First Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+first_wave
+
+
+```
+```{r}
+
+second_wave <- tm_shape(joined_data) + tm_fill("death_in_second_wave", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+second_wave
+
+
+third_wave <- tm_shape(joined_data) + tm_fill("death_in_third_wave", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Third Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+third_wave
+
+fourth_wave <- tm_shape(joined_data) + tm_fill("death_in_fourth_wave", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Fourth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+fourth_wave
+
+fifth_wave <- tm_shape(joined_data) + tm_fill("death_in_fifth_wave", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+fifth_wave
+
+```
+
+```{r}
+death_columns <- joined_data[, c("death_in_first_wave", "death_in_second_wave", "death_in_third_wave", "death_in_fourth_wave", "death_in_fifth_wave")] %>% 
+  st_drop_geometry()
+
+joined_data <- joined_data %>% 
+  dplyr::mutate(total_death = rowSums(death_columns))
+
+
+total <- tm_shape(joined_data) + tm_fill("total_death", style = "quantile", n = 7, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in Total", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+total
+
+
+```
+
+```{r}
+
+# convert tmap objects to grobs
+first_wave_grob <- tmap_grob(first_wave)
+second_wave_grob <- tmap_grob(second_wave)
+third_wave_grob <- tmap_grob(third_wave)
+fourth_wave_grob <- tmap_grob(fourth_wave)
+fifth_wave_grob <- tmap_grob(fifth_wave)
+total_grob <- tmap_grob(total)
+
+combined_grob <- grid.arrange(first_wave_grob, second_wave_grob, third_wave_grob, fourth_wave_grob, fifth_wave_grob, total_grob, ncol = 3)
+grid.draw(combined_grob)
+
+
+
+library(ggplot2)
+combined_plot <- arrangeGrob(
+  first_wave_grob, second_wave_grob, third_wave_grob,
+  fourth_wave_grob, fifth_wave_grob, total_grob,
+  ncol = 3
+)
+ggsave("combined_map.png", combined_grob, width = 16, height = 9, units = "in", dpi = 300)
+```
+
+
+
+```{r}
+tmap_save(first_wave, filename = "first_wave_map.png")
+tmap_save(second_wave, filename = "2nd_wave_map.png")
+tmap_save(third_wave, filename = "3rd_wave_map.png")
+tmap_save(fourth_wave, filename = "4th_wave_map.png")
+tmap_save(fifth_wave, filename = "5th_wave_map.png")
+tmap_save(total, filename = "total_death_map.png")
+
+
+
+
+```
+
