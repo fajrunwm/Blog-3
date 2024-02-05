@@ -27,6 +27,9 @@ qtm(joined_data)
 
 
 ```
+
+
+
 ```{r}
 library(gridExtra) 
 
@@ -125,8 +128,72 @@ tmap_save(fourth_wave, filename = "4th_wave_map.png")
 tmap_save(fifth_wave, filename = "5th_wave_map.png")
 tmap_save(total, filename = "total_death_map.png")
 
+```
+
+```{r}
+library(gridExtra) 
 
 
+first_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave", style = "quantile", n = 5, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the First Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+first_wave_ratio
+
+
+second_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  style = "quantile", n = 5, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+second_wave_ratio
+
+fifth_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  style = "quantile", n = 5, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+fifth_wave_ratio
 
 ```
+
+```{r}
+
+breaks <- c( 0.15, 0.25, 0.5, 2, 5, 10, 15, 20)
+
+first_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave",breaks=breaks, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the First Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+first_wave_ratio
+
+
+second_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  breaks=breaks, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+second_wave_ratio
+
+fifth_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  breaks=breaks, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5)
+fifth_wave_ratio
+```
+
+
+
+```{r}
+health <- read.csv(here("health.csv")) 
+
+health_joined <- left_join(joined_data, health, by = c("name_1"="Region") ) %>% 
+  mutate(total_expenditure=Government_Per_Capita_Health_Expenditure_EUR+Private_Per_Capita_Health_Expenditure_EUR_Mean_Values)
+
+```
+
+
 
