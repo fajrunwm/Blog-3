@@ -1,4 +1,4 @@
-```{r}
+```{r calling libraries}
 library(tidyverse)
 library(sf)
 library(tmap)
@@ -8,94 +8,92 @@ library(spdep)
 library(RColorBrewer)
 library(tmaptools)
 library(here)
+library(grid)
+library(gridExtra) 
+library(ggplot2)
 ```
 
-
-
-```{r}
-data <- read.csv(here("COVID19 data in Italy each wave.csv")) %>% 
-  clean_names()
-
+```{r calling shapefile}
 shape <- st_read(here("gadm41_ITA_1/gadm41_ITA_1.shp")) %>% 
   clean_names()
 
-joined_data <- left_join(shape, data, by = c("name_1"="denominazione_regione"))
+```
+```{r calling covid data}
+covid_data <- read.csv(here("COVID19 data in Italy each wave.csv")) %>% 
+  clean_names()
+
+joined_data <- left_join(shape, covid_data, by = c("name_1"="denominazione_regione"))
 
 qtm(joined_data)
 
-
-
-
 ```
 
-
-
-```{r}
-library(gridExtra) 
-
-
-first_wave <- tm_shape(joined_data) + tm_fill("death_in_first_wave", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the First Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-first_wave
-
-
-```
-```{r}
-
-second_wave <- tm_shape(joined_data) + tm_fill("death_in_second_wave", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Second Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-second_wave
-
-
-third_wave <- tm_shape(joined_data) + tm_fill("death_in_third_wave", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Third Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-third_wave
-
-fourth_wave <- tm_shape(joined_data) + tm_fill("death_in_fourth_wave", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Fourth Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-fourth_wave
-
-fifth_wave <- tm_shape(joined_data) + tm_fill("death_in_fifth_wave", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the Fifth Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-fifth_wave
-
-```
-
-```{r}
+```{r subset death data}
 death_columns <- joined_data[, c("death_in_first_wave", "death_in_second_wave", "death_in_third_wave", "death_in_fourth_wave", "death_in_fifth_wave")] %>% 
   st_drop_geometry()
 
 joined_data <- joined_data %>% 
   dplyr::mutate(total_death = rowSums(death_columns))
+```
 
+```{r calling healthcare data}
+health <- read.csv(here("health.csv"))%>% 
+  clean_names() 
 
-total <- tm_shape(joined_data) + tm_fill("total_death", style = "quantile", n = 7, palette = "Reds") +
-    tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Deaths in Total", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-total
-
+health_joined <- left_join(joined_data, health, by = c("name_1"="region") ) %>% 
+  mutate(total_expenditure=government_per_capita_health_expenditure_eur+private_per_capita_health_expenditure_eur_mean_values)
 
 ```
 
-```{r}
+## Visualise death maps in five waves
+```{r using jenks}
+N = 5
 
+first_wave <- tm_shape(joined_data) + tm_fill("death_in_first_wave", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "COVID-19 Deaths in the First Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+first_wave
+
+second_wave <- tm_shape(joined_data) + tm_fill("death_in_second_wave", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+second_wave
+
+third_wave <- tm_shape(joined_data) + tm_fill("death_in_third_wave", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Third Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+third_wave
+
+fourth_wave <- tm_shape(joined_data) + tm_fill("death_in_fourth_wave", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Fourth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+fourth_wave
+
+fifth_wave <- tm_shape(joined_data) + tm_fill("death_in_fifth_wave", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+fifth_wave
+
+total <- tm_shape(joined_data) + tm_fill("total_death", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Total", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+total
+
+```
+
+```{r combining the maps}
 # convert tmap objects to grobs
 first_wave_grob <- tmap_grob(first_wave)
 second_wave_grob <- tmap_grob(second_wave)
@@ -105,95 +103,100 @@ fifth_wave_grob <- tmap_grob(fifth_wave)
 total_grob <- tmap_grob(total)
 
 combined_grob <- grid.arrange(first_wave_grob, second_wave_grob, third_wave_grob, fourth_wave_grob, fifth_wave_grob, total_grob, ncol = 3)
+
 grid.draw(combined_grob)
 
-
-
-library(ggplot2)
 combined_plot <- arrangeGrob(
-  first_wave_grob, second_wave_grob, third_wave_grob,
-  fourth_wave_grob, fifth_wave_grob, total_grob,
-  ncol = 3
+  first_wave_grob, second_wave_grob, third_wave_grob, fourth_wave_grob, fifth_wave_grob, total_grob, ncol = 3
 )
-ggsave("combined_map.png", combined_grob, width = 16, height = 9, units = "in", dpi = 300)
 ```
 
-
-
-```{r}
-tmap_save(first_wave, filename = "first_wave_map.png")
-tmap_save(second_wave, filename = "2nd_wave_map.png")
-tmap_save(third_wave, filename = "3rd_wave_map.png")
-tmap_save(fourth_wave, filename = "4th_wave_map.png")
-tmap_save(fifth_wave, filename = "5th_wave_map.png")
-tmap_save(total, filename = "total_death_map.png")
+```{r saving the maps}
+ggsave("output/jenks_combined_death_map.png", combined_grob, width = 16, height = 9, units = "in", dpi = 300)
 
 ```
 
-```{r}
-library(gridExtra) 
+## Visualise ratio maps in three waves
+```{r using jenks}
 
-
-first_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave", style = "quantile", n = 5, palette = "Reds") +
+first_wave_ratio_jenks <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave", style = "jenks", n = N, palette = "Reds") +
     tm_text("name_1", size=0.4) +
     tm_scale_bar(position = c("left", "bottom")) +
     tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the First Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-first_wave_ratio
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+first_wave_ratio_jenks
 
-
-second_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  style = "quantile", n = 5, palette = "Reds") +
+second_wave_ratio_jenks <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  style = "jenks", n = N, palette = "Reds") +
     tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Second Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-second_wave_ratio
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+second_wave_ratio_jenks
 
-fifth_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  style = "quantile", n = 5, palette = "Reds") +
+fifth_wave_ratio_jenks <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  style = "jenks", n = N, palette = "Reds") +
     tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Fifth Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-fifth_wave_ratio
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+fifth_wave_ratio_jenks
 
 ```
 
-```{r}
+```{r saving jenks ratio maps}
+# save each map                            )
+tmap_save(first_wave_ratio_jenks, filename = "output/jenks_1st_wave_death_ratio_map.png")
+tmap_save(second_wave_ratio_jenks, filename = "output/jenks_2nd_wave_death_ratio_map.png")
+tmap_save(fifth_wave_ratio_jenks, filename = "output/jenks_5th_wave_death_ratio_map.png")
 
-breaks <- c( 0.15, 0.25, 0.5, 2, 5, 10, 15, 20)
+```
 
-first_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave",breaks=breaks, palette = "Reds") +
+```{r using manual breaks}
+breaks <- c( 0, 0.5, 2.5, 5, 10, 20)
+
+first_wave_ratio_mbreaks <- tm_shape(joined_data) + tm_fill("death_ratio_in_first_wave",breaks=breaks, palette = "Reds") +
     tm_text("name_1", size=0.4) +
     tm_scale_bar(position = c("left", "bottom")) +
     tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the First Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-first_wave_ratio
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+first_wave_ratio_mbreaks
 
-
-second_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  breaks=breaks, palette = "Reds") +
+second_wave_ratio_mbreaks <- tm_shape(joined_data) + tm_fill("death_ratio_in_second_wave",  breaks=breaks, palette = "Reds") +
     tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Second Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-second_wave_ratio
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Second Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+second_wave_ratio_mbreaks
 
-fifth_wave_ratio <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  breaks=breaks, palette = "Reds") +
+fifth_wave_ratio_mbreaks <- tm_shape(joined_data) + tm_fill("death_ratio_in_fifth_wave",  breaks=breaks, palette = "Reds") +
     tm_text("name_1", size=0.4) +
-    tm_scale_bar(position = c("left", "bottom")) +
-    tm_layout(frame = FALSE, title = "COVID-19 Mortality Rate in the Fifth Wave", title.position = c("left", "bottom"),
-              legend.title.size = 0.5, legend.text.size = 0.5)
-fifth_wave_ratio
+    #tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Fifth Wave", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+fifth_wave_ratio_mbreaks
 ```
 
-
-
-```{r}
-health <- read.csv(here("health.csv")) 
-
-health_joined <- left_join(joined_data, health, by = c("name_1"="Region") ) %>% 
-  mutate(total_expenditure=Government_Per_Capita_Health_Expenditure_EUR+Private_Per_Capita_Health_Expenditure_EUR_Mean_Values)
+```{r saving mbreaks ratio map}
+# save each map
+tmap_save(first_wave_ratio_mbreaks, filename = "output/mbreaks_1st_wave_death_ratio_map.png")
+tmap_save(second_wave_ratio_mbreaks, filename = "output/mbreaks_2nd_wave_death_ratio_map.png")
+tmap_save(fifth_wave_ratio_mbreaks, filename = "output/mbreaks_5th_wave_death_ratio_map.png")
 
 ```
 
+## Visualise healthcare maps
+```{r using jenks}
 
+healthcare_jenks <- tm_shape(health_joined) + tm_fill("total_expenditure", style = "jenks", n = N, palette = "Reds") +
+    tm_text("name_1", size=0.4) +
+    tm_scale_bar(position = c("left", "bottom")) +
+    tm_layout(frame = FALSE, title = "Goverment + Private per Capita Healthcare Expenditure in EUR", title.position = c("left", "bottom"),
+              legend.title.size = 0.5, legend.text.size = 0.5, title.size = 0.75)
+healthcare_jenks
 
+```
+
+```{r saving healthcare jenks map}
+# save each map                            )
+tmap_save(healthcare_jenks, filename = "output/healthcare_jenks_map.png")
+
+```
